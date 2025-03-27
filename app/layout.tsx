@@ -11,15 +11,15 @@ import { baseUrl } from './sitemap'
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Next.js Portfolio Starter',
-    template: '%s | Next.js Portfolio Starter',
+    default: 'Tom Fejer',
+    template: '%s | Tom Fejer',
   },
-  description: 'This is my portfolio.',
+  description: 'Product Designer based in the Netherlands.',
   openGraph: {
-    title: 'My Portfolio',
-    description: 'This is my portfolio.',
+    title: 'Tom Fejer',
+    description: 'Product Designer based in the Netherlands.',
     url: baseUrl,
-    siteName: 'My Portfolio',
+    siteName: 'Tom Fejer',
     locale: 'en_US',
     type: 'website',
   },
@@ -32,6 +32,15 @@ export const metadata: Metadata = {
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
+    },
+  },
+  other: {
+    'threads:username': 'grotandthemob',
+  },
+  alternates: {
+    canonical: baseUrl,
+    types: {
+      'application/activity+json': 'https://www.threads.net/@grotandthemob',
     },
   },
 }
@@ -52,6 +61,9 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
+      <head>
+        <link rel="me" href="https://www.threads.net/@grotandthemob" />
+      </head>
       <body className="antialiased max-w-xl mx-4 mt-8 lg:mx-auto">
         <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
           {/* <Navbar /> */}
