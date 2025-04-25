@@ -4,7 +4,7 @@ import { InstagramIcon, ThreadsIcon, LinkedInIcon, UnsplashIcon } from './compon
 
 export default function Page() {
   return (
-    <section className="absolute inset-0 flex items-center justify-center h-screen">
+    <section className="fixed inset-0 flex items-center justify-center h-[100dvh] overflow-hidden">
       {/* <TiltContainer> */}
         {/* <div className="p-4 m-4 bg-neutral-900 rounded-xl border border-neutral-800 min-w-[300px] flex gap-10 items-start justify-between hover:scale-105 transition-all duration-300 active:scale-95"> */}
           <div>
