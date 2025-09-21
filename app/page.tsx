@@ -1,7 +1,3 @@
-// import { BlogPosts } from 'app/components/posts'
-import TiltContainer from './components/TiltContainer'
-import { InstagramIcon, ThreadsIcon, LinkedInIcon, UnsplashIcon } from './components/icons'
-
 export default function Page() {
   return (
     <section className="fixed inset-0 flex items-center justify-center h-[100dvh]">
