@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Text } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { useRouter } from 'next/navigation'
 import * as THREE from 'three'
 
@@ -55,15 +55,15 @@ function CubeFace({ position, rotation, label, color, onHover, onLeave, onClick 
           opacity={0.9}
         />
       </mesh>
-      <Text
-        position={[0, 0, 0.01]}
-        fontSize={0.25}
-        color={hovered ? '#ffffff' : '#888888'}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {label}
-      </Text>
+      {/* Text labels temporarily disabled for compatibility */}
+      <mesh position={[0, 0, 0.02]}>
+        <planeGeometry args={[1.5, 0.3]} />
+        <meshBasicMaterial
+          color={hovered ? '#ffffff' : '#666666'}
+          transparent
+          opacity={0}
+        />
+      </mesh>
     </group>
   )
 }
