@@ -1,8 +1,10 @@
 import './global.css'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 
 export const metadata = {
-  title: 'Tom Fejér',
-  description: 'Designer, powered by coffee',
+  title: 'Tom Fejér - Designer & Builder',
+  description: 'Designer, builder, and coffee enthusiast. Exploring the intersection of design and code.',
 }
 
 export default function RootLayout({
@@ -11,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans">{children}</body>
     </html>
   )
 }
