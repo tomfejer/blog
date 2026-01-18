@@ -71,7 +71,7 @@ function Ground() {
   return (
     <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
       <planeGeometry args={[20, 20]} />
-      <shadowMaterial opacity={0.4} />
+      <meshStandardMaterial color="#333333" roughness={0.8} />
     </mesh>
   )
 }
@@ -103,6 +103,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
   const [snapTimer, setSnapTimer] = useState(0)
   const lastInteractionTime = useRef(Date.now())
   const currentFaceRef = useRef<FaceConfig>(faces[0])
+  const hasSnappedRef = useRef(false)
 
   useFrame((state, delta) => {
     if (!groupRef.current) return
@@ -133,8 +134,8 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
       onFaceChange(closestFace)
     }
 
-    // Trigger snapping when user stops rotating
-    if (!isUserRotating && timeSinceInteraction > 150 && timeSinceInteraction < 250) {
+    // Trigger snapping when user stops rotating (only once)
+    if (!isUserRotating && !hasSnappedRef.current && timeSinceInteraction > 100) {
       // Snap to nearest 90-degree increment on all axes
       const current = groupRef.current.rotation
       const snappedX = Math.round(current.x / (Math.PI / 2)) * (Math.PI / 2)
@@ -143,6 +144,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
 
       setTargetRotation(new THREE.Euler(snappedX, snappedY, snappedZ, current.order))
       setSnapTimer(0)
+      hasSnappedRef.current = true
     }
 
     // Apply smooth snapping
@@ -177,6 +179,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
     setIsUserRotating(true)
     setTargetRotation(null)
     setSnapTimer(0)
+    hasSnappedRef.current = false
     lastInteractionTime.current = Date.now()
   }
 
@@ -220,6 +223,10 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
         enablePan={false}
         enableDamping
         dampingFactor={0.05}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI}
+        minAzimuthAngle={-Infinity}
+        maxAzimuthAngle={Infinity}
         onStart={handleRotationStart}
         onEnd={handleRotationEnd}
       />
