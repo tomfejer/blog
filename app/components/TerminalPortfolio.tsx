@@ -20,6 +20,8 @@ const TerminalPortfolio = () => {
   const [isMockMode, setIsMockMode] = useState<boolean | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -231,67 +233,91 @@ Or just ask me anything about Tom's work, experience, or interests!`
     }
   };
 
+  const handleInputChange = (value: string) => {
+    setInput(value);
+
+    // Show autocomplete for slash commands
+    if (value.startsWith('/')) {
+      const commandKeys = Object.keys(commands);
+      const matches = commandKeys.filter(cmd => cmd.startsWith(value));
+      if (matches.length > 0 && value !== matches[0]) {
+        setAutocompleteOptions(matches);
+        setShowAutocomplete(true);
+      } else {
+        setShowAutocomplete(false);
+      }
+    } else {
+      setShowAutocomplete(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
       handleCommand(input);
       setInput('');
+      setShowAutocomplete(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowUp') {
+    // Handle Escape key
+    if (e.key === 'Escape') {
+      setShowAutocomplete(false);
+      return;
+    }
+
+    // Handle Tab for autocomplete
+    if (e.key === 'Tab' && showAutocomplete && autocompleteOptions.length > 0) {
       e.preventDefault();
-      if (commandHistory.length > 0) {
-        const newIndex = historyIndex + 1;
-        if (newIndex < commandHistory.length) {
+      setInput(autocompleteOptions[0]);
+      setShowAutocomplete(false);
+      return;
+    }
+
+    // Handle Arrow Up/Down for history (only when autocomplete is not shown)
+    if (!showAutocomplete) {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (commandHistory.length > 0) {
+          const newIndex = historyIndex + 1;
+          if (newIndex < commandHistory.length) {
+            setHistoryIndex(newIndex);
+            setInput(commandHistory[commandHistory.length - 1 - newIndex]);
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          const newIndex = historyIndex - 1;
           setHistoryIndex(newIndex);
           setInput(commandHistory[commandHistory.length - 1 - newIndex]);
+        } else if (historyIndex === 0) {
+          setHistoryIndex(-1);
+          setInput('');
         }
-      }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setInput(commandHistory[commandHistory.length - 1 - newIndex]);
-      } else if (historyIndex === 0) {
-        setHistoryIndex(-1);
-        setInput('');
-      }
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      const commandKeys = Object.keys(commands);
-      const matches = commandKeys.filter(cmd => cmd.startsWith(input));
-      if (matches.length === 1) {
-        setInput(matches[0]);
       }
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm flex flex-col">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm flex flex-col">
       {/* Header */}
-      <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center gap-2">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
-          <div className="w-3 h-3 rounded-full bg-[#febc2e]"></div>
-          <div className="w-3 h-3 rounded-full bg-[#28c840]"></div>
-        </div>
-        <div className="ml-4 text-[#888888] text-xs md:text-sm truncate flex-1">
+      <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center justify-between">
+        <div className="text-[#888888] text-xs md:text-sm truncate">
           portfolio-terminal ~ tom-fejer
         </div>
         {isMockMode && (
-          <div className="text-[#febc2e] text-xs bg-[#3e3e3e] px-2 py-1 rounded">
+          <div className="text-[#febc2e] text-xs bg-[#3e3e3e] px-2 py-1 rounded whitespace-nowrap ml-2">
             DEMO MODE
           </div>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2">
         {messages.map((msg, i) => (
-          <div key={i} className="whitespace-pre-wrap break-words">
+          <div key={i} className="whitespace-pre-wrap break-words max-w-full">
             {msg.type === 'user' && (
               <div>
                 <span className="text-[#4ec9b0]">→</span>{' '}
@@ -325,22 +351,49 @@ Or just ask me anything about Tom's work, experience, or interests!`
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="border-t border-[#3e3e3e] bg-[#2d2d2d] p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[#4ec9b0] flex-shrink-0">→</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent border-none outline-none text-[#d4d4d4] min-w-0"
-            placeholder="Type a command or ask me anything..."
-            disabled={isLoading}
-            autoFocus
-          />
-        </div>
-      </form>
+      <div className="border-t border-[#3e3e3e] bg-[#2d2d2d] sticky bottom-0">
+        {/* Autocomplete suggestions */}
+        {showAutocomplete && autocompleteOptions.length > 0 && (
+          <div className="border-b border-[#3e3e3e] px-4 py-2 space-y-1">
+            {autocompleteOptions.map((cmd) => (
+              <div
+                key={cmd}
+                onClick={() => {
+                  setInput(cmd);
+                  setShowAutocomplete(false);
+                  inputRef.current?.focus();
+                }}
+                className="text-[#4ec9b0] text-xs cursor-pointer hover:bg-[#3e3e3e] px-2 py-1 rounded"
+              >
+                {cmd}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[#4ec9b0] flex-shrink-0">→</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent border-none outline-none text-[#d4d4d4] min-w-0"
+              placeholder="Type a command or ask me anything..."
+              disabled={isLoading}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              data-lpignore="true"
+              data-form-type="other"
+              autoFocus
+            />
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
