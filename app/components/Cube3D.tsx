@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as THREE from 'three'
 
 interface FaceConfig {
@@ -95,8 +95,17 @@ function CubeFace({ position, rotation, color }: any) {
   )
 }
 
-function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
+function Cube({
+  onFaceChange,
+  isNavigating,
+  onNavigationComplete
+}: {
+  onFaceChange: (face: FaceConfig) => void
+  isNavigating: boolean
+  onNavigationComplete: () => void
+}) {
   const groupRef = useRef<THREE.Group>(null)
+  const controlsRef = useRef<any>(null)
   const { camera } = useThree()
   const [isUserRotating, setIsUserRotating] = useState(false)
   const [targetRotation, setTargetRotation] = useState<THREE.Euler | null>(null)
@@ -105,8 +114,54 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
   const currentFaceRef = useRef<FaceConfig>(faces[0])
   const hasSnappedRef = useRef(false)
 
+  // Camera animation state
+  const initialCameraPos = useRef(new THREE.Vector3())
+  const targetCameraPos = useRef(new THREE.Vector3(3, 1, 2))
+  const animationProgress = useRef(0)
+
   useFrame((state, delta) => {
     if (!groupRef.current) return
+
+    // Handle navigation camera animation
+    if (isNavigating) {
+      if (animationProgress.current === 0) {
+        // Store initial camera position
+        initialCameraPos.current.copy(camera.position)
+        // Disable controls
+        if (controlsRef.current) {
+          controlsRef.current.enabled = false
+        }
+      }
+
+      animationProgress.current += delta * 1.5 // Animation speed
+
+      if (animationProgress.current >= 1) {
+        animationProgress.current = 1
+        // Animation complete, trigger navigation
+        setTimeout(() => {
+          onNavigationComplete()
+        }, 100)
+      }
+
+      // Smooth camera movement
+      const t = animationProgress.current
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - t, 3)
+
+      camera.position.lerpVectors(initialCameraPos.current, targetCameraPos.current, eased)
+      camera.lookAt(0, 0, 0)
+
+      return // Skip other animations during navigation
+    } else {
+      // Reset animation progress when not navigating
+      if (animationProgress.current > 0) {
+        animationProgress.current = 0
+        // Re-enable controls
+        if (controlsRef.current) {
+          controlsRef.current.enabled = true
+        }
+      }
+    }
 
     const timeSinceInteraction = Date.now() - lastInteractionTime.current
 
@@ -219,6 +274,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
       </group>
 
       <OrbitControls
+        ref={controlsRef}
         enableZoom={false}
         enablePan={false}
         enableDamping
@@ -237,10 +293,22 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
 export default function Cube3D() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   const [currentFace, setCurrentFace] = useState<FaceConfig>(faces[0])
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [overlayOpacity, setOverlayOpacity] = useState(0)
   const router = useRouter()
+  const pendingRouteRef = useRef<string>('')
 
   const handleNavigate = () => {
-    router.push(currentFace.route)
+    pendingRouteRef.current = currentFace.route
+    setIsNavigating(true)
+  }
+
+  const handleNavigationComplete = () => {
+    // Fade to white overlay
+    setOverlayOpacity(1)
+    setTimeout(() => {
+      router.push(pendingRouteRef.current)
+    }, 300)
   }
 
   return (
@@ -276,14 +344,28 @@ export default function Cube3D() {
         {/* Ground plane for shadows */}
         <Ground />
 
-        <Cube onFaceChange={setCurrentFace} />
+        <Cube
+          onFaceChange={setCurrentFace}
+          isNavigating={isNavigating}
+          onNavigationComplete={handleNavigationComplete}
+        />
       </Canvas>
 
+      {/* White overlay for transition */}
+      <div
+        className="fixed inset-0 bg-white pointer-events-none transition-opacity duration-300"
+        style={{ opacity: overlayOpacity }}
+      />
+
       {/* Navigation Button */}
-      <div className="fixed bottom-12 left-0 right-0 flex justify-center z-20 pointer-events-none">
+      <div
+        className="fixed bottom-12 left-0 right-0 flex justify-center z-20 pointer-events-none transition-opacity duration-300"
+        style={{ opacity: isNavigating ? 0 : 1 }}
+      >
         <button
           onClick={handleNavigate}
-          className="pointer-events-auto group relative px-8 py-4 bg-black/80 backdrop-blur-sm border border-white/20 rounded-full hover:bg-black transition-all hover:scale-105 active:scale-95"
+          disabled={isNavigating}
+          className="pointer-events-auto group relative px-8 py-4 bg-black/80 backdrop-blur-sm border border-white/20 rounded-full hover:bg-black transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
         >
           <div className="flex items-center gap-3">
             <div
