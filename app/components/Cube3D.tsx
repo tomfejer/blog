@@ -21,7 +21,7 @@ const faces: FaceConfig[] = [
     position: [0, 0, 1.01],
     rotation: [0, 0, 0],
     label: 'WORK',
-    color: '#2d3748',
+    color: '#4a5568',
     route: '/work',
     normal: new THREE.Vector3(0, 0, 1)
   },
@@ -29,7 +29,7 @@ const faces: FaceConfig[] = [
     position: [0, 0, -1.01],
     rotation: [0, Math.PI, 0],
     label: 'WRITING',
-    color: '#3a3052',
+    color: '#553c7a',
     route: '/writing',
     normal: new THREE.Vector3(0, 0, -1)
   },
@@ -37,7 +37,7 @@ const faces: FaceConfig[] = [
     position: [1.01, 0, 0],
     rotation: [0, Math.PI / 2, 0],
     label: 'DESIGN',
-    color: '#3d2942',
+    color: '#6b4668',
     route: '/design',
     normal: new THREE.Vector3(1, 0, 0)
   },
@@ -45,7 +45,7 @@ const faces: FaceConfig[] = [
     position: [-1.01, 0, 0],
     rotation: [0, -Math.PI / 2, 0],
     label: 'CODE',
-    color: '#1e4d3f',
+    color: '#2d5a4f',
     route: '/code',
     normal: new THREE.Vector3(-1, 0, 0)
   },
@@ -53,7 +53,7 @@ const faces: FaceConfig[] = [
     position: [0, 1.01, 0],
     rotation: [-Math.PI / 2, 0, 0],
     label: 'ABOUT',
-    color: '#3d3226',
+    color: '#5a4a35',
     route: '/about',
     normal: new THREE.Vector3(0, 1, 0)
   },
@@ -61,7 +61,7 @@ const faces: FaceConfig[] = [
     position: [0, -1.01, 0],
     rotation: [Math.PI / 2, 0, 0],
     label: 'CONTACT',
-    color: '#3f2832',
+    color: '#664244',
     route: '/contact',
     normal: new THREE.Vector3(0, -1, 0)
   },
@@ -69,9 +69,9 @@ const faces: FaceConfig[] = [
 
 function Ground() {
   return (
-    <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -2, 0]}>
-      <planeGeometry args={[50, 50]} />
-      <shadowMaterial opacity={0.3} />
+    <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
+      <planeGeometry args={[20, 20]} />
+      <shadowMaterial opacity={0.4} />
     </mesh>
   )
 }
@@ -99,7 +99,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
   const groupRef = useRef<THREE.Group>(null)
   const { camera } = useThree()
   const [isUserRotating, setIsUserRotating] = useState(false)
-  const [targetQuaternion, setTargetQuaternion] = useState<THREE.Quaternion | null>(null)
+  const [targetRotation, setTargetRotation] = useState<THREE.Euler | null>(null)
   const [snapTimer, setSnapTimer] = useState(0)
   const lastInteractionTime = useRef(Date.now())
   const currentFaceRef = useRef<FaceConfig>(faces[0])
@@ -109,7 +109,7 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
 
     const timeSinceInteraction = Date.now() - lastInteractionTime.current
 
-    // Detect which face is facing camera
+    // Always detect which face is facing camera
     const cameraDirection = new THREE.Vector3()
     camera.getWorldDirection(cameraDirection)
     cameraDirection.negate()
@@ -127,55 +127,55 @@ function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
       }
     })
 
-    // Update face if changed
+    // Update button label in real-time
     if (closestFace !== currentFaceRef.current) {
       currentFaceRef.current = closestFace
       onFaceChange(closestFace)
     }
 
-    // Snapping logic when user stops rotating
-    if (!isUserRotating && timeSinceInteraction > 200 && timeSinceInteraction < 300) {
-      // Calculate target quaternion to face the closest face toward camera
-      const targetQuat = calculateFaceQuaternion(closestFace.normal, cameraDirection)
-      setTargetQuaternion(targetQuat)
+    // Trigger snapping when user stops rotating
+    if (!isUserRotating && timeSinceInteraction > 150 && timeSinceInteraction < 250) {
+      // Snap to nearest 90-degree increment on all axes
+      const current = groupRef.current.rotation
+      const snappedX = Math.round(current.x / (Math.PI / 2)) * (Math.PI / 2)
+      const snappedY = Math.round(current.y / (Math.PI / 2)) * (Math.PI / 2)
+      const snappedZ = Math.round(current.z / (Math.PI / 2)) * (Math.PI / 2)
+
+      setTargetRotation(new THREE.Euler(snappedX, snappedY, snappedZ, current.order))
       setSnapTimer(0)
     }
 
-    // Smooth snap to target
-    if (targetQuaternion && !isUserRotating) {
-      groupRef.current.quaternion.slerp(targetQuaternion, 0.1)
+    // Apply smooth snapping
+    if (targetRotation && !isUserRotating) {
+      const current = groupRef.current.rotation
 
-      const angleDiff = groupRef.current.quaternion.angleTo(targetQuaternion)
+      // Smooth interpolation to target
+      current.x += (targetRotation.x - current.x) * 0.15
+      current.y += (targetRotation.y - current.y) * 0.15
+      current.z += (targetRotation.z - current.z) * 0.15
 
-      if (angleDiff < 0.01) {
+      // Check if we're close enough to target
+      const distance =
+        Math.abs(targetRotation.x - current.x) +
+        Math.abs(targetRotation.y - current.y) +
+        Math.abs(targetRotation.z - current.z)
+
+      if (distance < 0.01) {
+        // Locked into position
         setSnapTimer(prev => prev + delta)
 
-        // After 2 seconds, start gentle rotation
+        // After 2 seconds, start gentle auto-rotation
         if (snapTimer > 2) {
-          const euler = new THREE.Euler().setFromQuaternion(groupRef.current.quaternion)
-          euler.x += delta * 0.03
-          euler.y += delta * 0.05
-          groupRef.current.quaternion.setFromEuler(euler)
+          groupRef.current.rotation.x += delta * 0.04
+          groupRef.current.rotation.y += delta * 0.06
         }
       }
     }
   })
 
-  const calculateFaceQuaternion = (faceNormal: THREE.Vector3, cameraDir: THREE.Vector3): THREE.Quaternion => {
-    // Create a quaternion that rotates the face normal to align with camera direction
-    const targetDir = cameraDir.clone().normalize()
-    const currentNormal = faceNormal.clone().normalize()
-
-    const quaternion = new THREE.Quaternion()
-    quaternion.setFromUnitVectors(currentNormal, targetDir)
-
-    // Apply to current rotation
-    return quaternion.multiply(groupRef.current!.quaternion)
-  }
-
   const handleRotationStart = () => {
     setIsUserRotating(true)
-    setTargetQuaternion(null)
+    setTargetRotation(null)
     setSnapTimer(0)
     lastInteractionTime.current = Date.now()
   }
