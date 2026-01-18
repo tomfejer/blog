@@ -17,6 +17,7 @@ const TerminalPortfolio = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMockMode, setIsMockMode] = useState<boolean | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -210,6 +211,11 @@ Or just ask me anything about Tom's work, experience, or interests!`
         throw new Error(data.error);
       }
 
+      // Check if we're in mock mode
+      if (data.mockMode && isMockMode === null) {
+        setIsMockMode(true);
+      }
+
       setMessages(prev => [...prev, {
         type: 'assistant',
         content: data.response
@@ -272,9 +278,14 @@ Or just ask me anything about Tom's work, experience, or interests!`
           <div className="w-3 h-3 rounded-full bg-[#febc2e]"></div>
           <div className="w-3 h-3 rounded-full bg-[#28c840]"></div>
         </div>
-        <div className="ml-4 text-[#888888] text-xs md:text-sm truncate">
+        <div className="ml-4 text-[#888888] text-xs md:text-sm truncate flex-1">
           portfolio-terminal ~ tom-fejer
         </div>
+        {isMockMode && (
+          <div className="text-[#febc2e] text-xs bg-[#3e3e3e] px-2 py-1 rounded">
+            DEMO MODE
+          </div>
+        )}
       </div>
 
       {/* Messages */}
