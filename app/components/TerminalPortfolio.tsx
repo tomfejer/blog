@@ -301,9 +301,9 @@ Or just ask me anything about Tom's work, experience, or interests!`
   };
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm flex flex-col">
+    <div className="fixed inset-0 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm flex flex-col">
       {/* Header */}
-      <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center justify-between">
+      <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center justify-between flex-shrink-0">
         <div className="text-[#888888] text-xs md:text-sm truncate">
           portfolio-terminal ~ tom-fejer
         </div>
@@ -315,7 +315,7 @@ Or just ask me anything about Tom's work, experience, or interests!`
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 pb-4">
         {messages.map((msg, i) => (
           <div key={i} className="whitespace-pre-wrap break-words max-w-full">
             {msg.type === 'user' && (
@@ -350,8 +350,8 @@ Or just ask me anything about Tom's work, experience, or interests!`
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-[#3e3e3e] bg-[#2d2d2d] sticky bottom-0">
+      {/* Input - Fixed at bottom */}
+      <div className="border-t border-[#3e3e3e] bg-[#2d2d2d] flex-shrink-0">
         {/* Autocomplete suggestions */}
         {showAutocomplete && autocompleteOptions.length > 0 && (
           <div className="border-b border-[#3e3e3e] px-4 py-2 space-y-1">
@@ -371,12 +371,14 @@ Or just ask me anything about Tom's work, experience, or interests!`
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-4">
+        <form onSubmit={handleSubmit} className="p-4" autoComplete="off">
           <div className="flex items-center gap-2">
             <span className="text-[#4ec9b0] flex-shrink-0">→</span>
             <input
               ref={inputRef}
               type="text"
+              name="terminal-input"
+              id="terminal-input"
               value={input}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -389,6 +391,8 @@ Or just ask me anything about Tom's work, experience, or interests!`
               spellCheck="false"
               data-lpignore="true"
               data-form-type="other"
+              data-1p-ignore="true"
+              aria-autocomplete="none"
               autoFocus
             />
           </div>
