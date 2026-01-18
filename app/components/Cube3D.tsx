@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef, useState, useEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
 import { useRouter } from 'next/navigation'
 import * as THREE from 'three'
@@ -9,107 +9,72 @@ import * as THREE from 'three'
 interface FaceConfig {
   position: [number, number, number]
   rotation: [number, number, number]
-  targetRotation: [number, number, number]
   label: string
   color: string
   route: string
+  normal: THREE.Vector3
 }
 
 const faces: FaceConfig[] = [
   {
     position: [0, 0, 1.01],
     rotation: [0, 0, 0],
-    targetRotation: [0, 0, 0],
     label: 'WORK',
     color: '#3b82f6',
-    route: '/work'
+    route: '/work',
+    normal: new THREE.Vector3(0, 0, 1)
   },
   {
     position: [0, 0, -1.01],
     rotation: [0, Math.PI, 0],
-    targetRotation: [0, Math.PI, 0],
     label: 'WRITING',
     color: '#8b5cf6',
-    route: '/writing'
+    route: '/writing',
+    normal: new THREE.Vector3(0, 0, -1)
   },
   {
     position: [1.01, 0, 0],
     rotation: [0, Math.PI / 2, 0],
-    targetRotation: [0, -Math.PI / 2, 0],
     label: 'DESIGN',
     color: '#ec4899',
-    route: '/design'
+    route: '/design',
+    normal: new THREE.Vector3(1, 0, 0)
   },
   {
     position: [-1.01, 0, 0],
     rotation: [0, -Math.PI / 2, 0],
-    targetRotation: [0, Math.PI / 2, 0],
     label: 'CODE',
     color: '#10b981',
-    route: '/code'
+    route: '/code',
+    normal: new THREE.Vector3(-1, 0, 0)
   },
   {
     position: [0, 1.01, 0],
     rotation: [-Math.PI / 2, 0, 0],
-    targetRotation: [Math.PI / 2, 0, 0],
     label: 'ABOUT',
     color: '#f59e0b',
-    route: '/about'
+    route: '/about',
+    normal: new THREE.Vector3(0, 1, 0)
   },
   {
     position: [0, -1.01, 0],
     rotation: [Math.PI / 2, 0, 0],
-    targetRotation: [-Math.PI / 2, 0, 0],
     label: 'CONTACT',
     color: '#ef4444',
-    route: '/contact'
+    route: '/contact',
+    normal: new THREE.Vector3(0, -1, 0)
   },
 ]
 
-function CubeFace({ position, rotation, label, color, onHover, onLeave, onClick, isSnapping }: any) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-
-  useFrame(() => {
-    if (meshRef.current) {
-      // Pulse animation on hover
-      const targetScale = hovered ? 1.02 : 1
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.1)
-    }
-  })
-
+function CubeFace({ position, rotation, color }: any) {
   return (
     <group position={position} rotation={rotation}>
-      <mesh
-        ref={meshRef}
-        castShadow
-        receiveShadow
-        onPointerOver={(e) => {
-          if (!isSnapping) {
-            e.stopPropagation()
-            setHovered(true)
-            onHover()
-            document.body.style.cursor = 'pointer'
-          }
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation()
-          setHovered(false)
-          onLeave()
-          document.body.style.cursor = 'default'
-        }}
-        onClick={(e) => {
-          if (!isSnapping) {
-            e.stopPropagation()
-            onClick()
-          }
-        }}
-      >
+      <mesh castShadow receiveShadow>
         <planeGeometry args={[2, 2]} />
         <meshStandardMaterial
-          color={hovered ? color : '#1a1a1a'}
+          color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 0.6 : 0.15}
+          emissiveIntensity={0.2}
           metalness={0.3}
           roughness={0.4}
           transparent
@@ -120,91 +85,153 @@ function CubeFace({ position, rotation, label, color, onHover, onLeave, onClick,
   )
 }
 
-function Cube() {
+function Cube({ onFaceChange }: { onFaceChange: (face: FaceConfig) => void }) {
   const groupRef = useRef<THREE.Group>(null)
-  const [autoRotate, setAutoRotate] = useState(true)
-  const [isSnapping, setIsSnapping] = useState(false)
-  const [targetRotation, setTargetRotation] = useState<[number, number, number] | null>(null)
-  const router = useRouter()
+  const { camera } = useThree()
+  const [isUserRotating, setIsUserRotating] = useState(false)
+  const [snapTarget, setSnapTarget] = useState<THREE.Euler | null>(null)
+  const [snapTimer, setSnapTimer] = useState(0)
+  const lastInteractionTime = useRef(Date.now())
+  const idleStartTime = useRef<number | null>(null)
 
   useFrame((state, delta) => {
-    if (groupRef.current) {
-      if (isSnapping && targetRotation) {
-        // Smooth snap to target rotation
-        const current = groupRef.current.rotation
-        const target = new THREE.Euler(...targetRotation)
+    if (!groupRef.current) return
 
-        current.x += (target.x - current.x) * 0.1
-        current.y += (target.y - current.y) * 0.1
-        current.z += (target.z - current.z) * 0.1
+    const timeSinceInteraction = Date.now() - lastInteractionTime.current
 
-        // Check if close enough to target
-        const distance = Math.abs(target.x - current.x) + Math.abs(target.y - current.y) + Math.abs(target.z - current.z)
-        if (distance < 0.01) {
-          setIsSnapping(false)
+    // Detect which face is facing camera
+    const cameraDirection = new THREE.Vector3()
+    camera.getWorldDirection(cameraDirection)
+    cameraDirection.negate() // Face towards camera
+
+    let closestFace = faces[0]
+    let maxDot = -1
+
+    faces.forEach(face => {
+      const faceNormal = face.normal.clone()
+      faceNormal.applyQuaternion(groupRef.current!.quaternion)
+      const dot = faceNormal.dot(cameraDirection)
+      if (dot > maxDot) {
+        maxDot = dot
+        closestFace = face
+      }
+    })
+
+    // If user stopped rotating, start snap sequence
+    if (!isUserRotating && timeSinceInteraction > 300 && timeSinceInteraction < 400) {
+      // Calculate snap target rotation
+      const targetRotation = calculateSnapRotation(groupRef.current.rotation, closestFace.normal)
+      setSnapTarget(targetRotation)
+      onFaceChange(closestFace)
+      idleStartTime.current = Date.now()
+    }
+
+    // Snap to target
+    if (snapTarget && !isUserRotating) {
+      const current = groupRef.current.rotation
+      current.x += (snapTarget.x - current.x) * 0.1
+      current.y += (snapTarget.y - current.y) * 0.1
+      current.z += (snapTarget.z - current.z) * 0.1
+
+      const distance = Math.abs(snapTarget.x - current.x) +
+                      Math.abs(snapTarget.y - current.y) +
+                      Math.abs(snapTarget.z - current.z)
+
+      if (distance < 0.01) {
+        setSnapTimer(prev => prev + delta)
+      }
+
+      // After 2 seconds of being snapped, start auto-rotate
+      if (snapTimer > 2 && idleStartTime.current) {
+        const idleTime = Date.now() - idleStartTime.current
+        if (idleTime > 2000) {
+          groupRef.current.rotation.x += delta * 0.05
+          groupRef.current.rotation.y += delta * 0.08
         }
-      } else if (autoRotate) {
-        // Gentle idle rotation
-        groupRef.current.rotation.x += delta * 0.08
-        groupRef.current.rotation.y += delta * 0.12
       }
     }
   })
 
-  const handleFaceClick = (face: FaceConfig) => {
-    setAutoRotate(false)
-    setIsSnapping(true)
-    setTargetRotation(face.targetRotation)
+  const calculateSnapRotation = (current: THREE.Euler, targetNormal: THREE.Vector3): THREE.Euler => {
+    // Snap to nearest 90-degree increment
+    const snapToNearest90 = (angle: number) => Math.round(angle / (Math.PI / 2)) * (Math.PI / 2)
 
-    // Navigate after snap animation
-    setTimeout(() => {
-      router.push(face.route)
-    }, 800)
+    return new THREE.Euler(
+      snapToNearest90(current.x),
+      snapToNearest90(current.y),
+      snapToNearest90(current.z),
+      current.order
+    )
+  }
+
+  const handleRotationStart = () => {
+    setIsUserRotating(true)
+    setSnapTarget(null)
+    setSnapTimer(0)
+    idleStartTime.current = null
+    lastInteractionTime.current = Date.now()
+  }
+
+  const handleRotationEnd = () => {
+    setIsUserRotating(false)
+    lastInteractionTime.current = Date.now()
   }
 
   return (
-    <group ref={groupRef} scale={0.7}>
-      {/* Main cube with shadows */}
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial
-          color="#222222"
-          wireframe
-          opacity={0.3}
-          transparent
-        />
-      </mesh>
+    <>
+      <group ref={groupRef} scale={0.7}>
+        {/* Main wireframe cube */}
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[2, 2, 2]} />
+          <meshStandardMaterial
+            color="#222222"
+            wireframe
+            opacity={0.3}
+            transparent
+          />
+        </mesh>
 
-      {/* Solid inner cube for depth */}
-      <mesh scale={0.98}>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial
-          color="#0a0a0a"
-          metalness={0.8}
-          roughness={0.2}
-        />
-      </mesh>
+        {/* Solid inner cube for depth */}
+        <mesh scale={0.98}>
+          <boxGeometry args={[2, 2, 2]} />
+          <meshStandardMaterial
+            color="#0a0a0a"
+            metalness={0.8}
+            roughness={0.2}
+          />
+        </mesh>
 
-      {/* Faces */}
-      {faces.map((face, index) => (
-        <CubeFace
-          key={index}
-          {...face}
-          isSnapping={isSnapping}
-          onHover={() => !isSnapping && setAutoRotate(false)}
-          onLeave={() => !isSnapping && setAutoRotate(true)}
-          onClick={() => handleFaceClick(face)}
-        />
-      ))}
-    </group>
+        {/* Faces */}
+        {faces.map((face, index) => (
+          <CubeFace key={index} {...face} />
+        ))}
+      </group>
+
+      <OrbitControls
+        enableZoom={false}
+        enablePan={false}
+        minPolarAngle={Math.PI / 4}
+        maxPolarAngle={3 * Math.PI / 4}
+        enableDamping
+        dampingFactor={0.05}
+        onStart={handleRotationStart}
+        onEnd={handleRotationEnd}
+      />
+    </>
   )
 }
 
 export default function Cube3D() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  const [currentFace, setCurrentFace] = useState<FaceConfig>(faces[0])
+  const router = useRouter()
+
+  const handleNavigate = () => {
+    router.push(currentFace.route)
+  }
 
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen relative">
       <Canvas
         shadows
         camera={{
@@ -239,18 +266,37 @@ export default function Cube3D() {
         {/* Environment for reflections */}
         <Environment preset="city" />
 
-        <Cube />
-
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          autoRotate={false}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={3 * Math.PI / 4}
-          enableDamping
-          dampingFactor={0.05}
-        />
+        <Cube onFaceChange={setCurrentFace} />
       </Canvas>
+
+      {/* Navigation Button */}
+      <div className="fixed bottom-12 left-0 right-0 flex justify-center z-20 pointer-events-none">
+        <button
+          onClick={handleNavigate}
+          className="pointer-events-auto group relative px-8 py-4 bg-black/80 backdrop-blur-sm border border-white/20 rounded-full hover:bg-black transition-all hover:scale-105 active:scale-95"
+          style={{
+            boxShadow: `0 0 20px ${currentFace.color}40`,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{ backgroundColor: currentFace.color }}
+            />
+            <span className="text-white font-medium tracking-wide">
+              {currentFace.label}
+            </span>
+            <svg
+              className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </button>
+      </div>
     </div>
   )
 }
