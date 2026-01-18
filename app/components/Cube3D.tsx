@@ -88,7 +88,7 @@ function Cube() {
   }
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} scale={0.7}>
       {/* Wireframe cube */}
       <mesh>
         <boxGeometry args={[2, 2, 2]} />
@@ -110,9 +110,16 @@ function Cube() {
 }
 
 export default function Cube3D() {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
   return (
     <div className="w-full h-screen">
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+      <Canvas
+        camera={{
+          position: [0, 0, isMobile ? 6 : 5],
+          fov: isMobile ? 60 : 50
+        }}
+      >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
