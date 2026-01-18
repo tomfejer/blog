@@ -17,13 +17,17 @@ const TerminalPortfolio = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [isMockMode, setIsMockMode] = useState<boolean | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteOptions, setAutocompleteOptions] = useState<string[]>([]);
+  const [typingMessage, setTypingMessage] = useState<string>('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Portfolio data - Customized for Tom Fejér
   const portfolioData = {
@@ -157,10 +161,46 @@ Or just ask me anything about Tom's work, experience, or interests!`
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, typingMessage]);
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Typewriter effect
+  const typeMessage = (text: string) => {
+    setIsTyping(true);
+    setTypingMessage('');
+
+    let currentIndex = 0;
+    const typingSpeed = 15; // milliseconds per character
+
+    const typeNextChar = () => {
+      if (currentIndex < text.length) {
+        setTypingMessage(text.slice(0, currentIndex + 1));
+        currentIndex++;
+        typingTimeoutRef.current = setTimeout(typeNextChar, typingSpeed);
+      } else {
+        // Typing complete
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          type: 'assistant',
+          content: text
+        }]);
+        setTypingMessage('');
+      }
+    };
+
+    typeNextChar();
+  };
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleCommand = async (cmd: string) => {
@@ -191,6 +231,7 @@ Or just ask me anything about Tom's work, experience, or interests!`
 
     // Handle AI conversation
     setIsLoading(true);
+    setIsThinking(true);
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -218,18 +259,19 @@ Or just ask me anything about Tom's work, experience, or interests!`
         setIsMockMode(true);
       }
 
-      setMessages(prev => [...prev, {
-        type: 'assistant',
-        content: data.response
-      }]);
+      setIsThinking(false);
+      setIsLoading(false);
+
+      // Use typewriter effect for response
+      typeMessage(data.response);
     } catch (error) {
       console.error('Chat error:', error);
+      setIsThinking(false);
+      setIsLoading(false);
       setMessages(prev => [...prev, {
         type: 'error',
         content: 'Error: Unable to process request. Please try again or use /help to see available commands.'
       }]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -302,8 +344,8 @@ Or just ask me anything about Tom's work, experience, or interests!`
 
   return (
     <div className="fixed inset-0 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm flex flex-col">
-      {/* Header */}
-      <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center justify-between flex-shrink-0">
+      {/* Header - Fixed at top */}
+      <div className="fixed top-0 left-0 right-0 bg-[#2d2d2d] border-b border-[#3e3e3e] px-4 py-2 flex items-center justify-between z-10">
         <div className="text-[#888888] text-xs md:text-sm truncate">
           portfolio-terminal ~ tom-fejer
         </div>
@@ -314,8 +356,8 @@ Or just ask me anything about Tom's work, experience, or interests!`
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 pb-4">
+      {/* Messages - with padding for fixed header and footer */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pt-12 pb-24 px-4 space-y-2">
         {messages.map((msg, i) => (
           <div key={i} className="whitespace-pre-wrap break-words max-w-full">
             {msg.type === 'user' && (
@@ -341,17 +383,32 @@ Or just ask me anything about Tom's work, experience, or interests!`
             )}
           </div>
         ))}
-        {isLoading && (
-          <div className="flex items-center gap-2 text-[#888888] ml-4">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Processing...</span>
+
+        {/* Thinking state */}
+        {isThinking && (
+          <div className="text-[#888888] ml-4 my-2 flex items-center gap-2">
+            <span className="animate-pulse">Thinking</span>
+            <span className="flex gap-1">
+              <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+              <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+              <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+            </span>
           </div>
         )}
+
+        {/* Typing message */}
+        {isTyping && typingMessage && (
+          <div className="text-[#ce9178] ml-4 my-2">
+            {typingMessage}
+            <span className="animate-pulse">▊</span>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input - Fixed at bottom */}
-      <div className="border-t border-[#3e3e3e] bg-[#2d2d2d] flex-shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#3e3e3e] bg-[#2d2d2d] z-10">
         {/* Autocomplete suggestions */}
         {showAutocomplete && autocompleteOptions.length > 0 && (
           <div className="border-b border-[#3e3e3e] px-4 py-2 space-y-1">
@@ -384,7 +441,7 @@ Or just ask me anything about Tom's work, experience, or interests!`
               onKeyDown={handleKeyDown}
               className="flex-1 bg-transparent border-none outline-none text-[#d4d4d4] min-w-0"
               placeholder="Type a command or ask me anything..."
-              disabled={isLoading}
+              disabled={isLoading || isTyping}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
