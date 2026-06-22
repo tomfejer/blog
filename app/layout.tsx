@@ -1,8 +1,10 @@
 import './global.css'
+import { GeistSans } from 'geist/font/sans'
 
 export const metadata = {
   title: 'Tom Fejér',
-  description: 'Designer, powered by coffee',
+  description: 'Builder-designer creating prototypes, code, and systems that help teams think better.',
+  metadataBase: new URL('https://tomfejer.com'),
 }
 
 export default function RootLayout({
@@ -12,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={GeistSans.className}>{children}</body>
     </html>
   )
 }

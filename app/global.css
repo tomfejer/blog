@@ -3,15 +3,21 @@
 @tailwind utilities;
 
 ::selection {
-  background-color: hsla(0, 0%, 100%, 0.1);
-  color: #ffffff;
+  background-color: hsla(0, 0%, 0%, 0.1);
+  color: #000000;
 }
 
 html {
   min-width: 360px;
-  color-scheme: dark;
-  background-color: #000000;
-  color: #ffffff;
+  color-scheme: light;
+  background-color: #ffffff;
+  color: rgb(0 0 0 / 90%);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
 }
 
 .prose .anchor {

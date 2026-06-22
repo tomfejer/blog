@@ -1,42 +1,50 @@
-# Portfolio Blog Starter
+# tomfejer.com
 
-This is a porfolio site template complete with a blog. Includes:
+Tom Fejér's public profile and Hire Tom MCP server.
 
-- MDX and Markdown support
-- Optimized for SEO (sitemap, robots, JSON-LD schema)
-- RSS Feed
-- Dynamic OG images
-- Syntax highlighting
-- Tailwind v4
-- Vercel Speed Insights / Web Analytics
-- Geist font
-
-## Demo
-
-https://portfolio-blog-starter.vercel.app
-
-## How to Use
-
-You can choose from one of the following two methods to use this repository:
-
-### One-Click Deploy
-
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vercel/examples/tree/main/solutions/blog&project-name=blog&repository-name=blog)
-
-### Clone and Deploy
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [pnpm](https://pnpm.io/installation) to bootstrap the example:
+## Local Development
 
 ```bash
-pnpm create next-app --example https://github.com/vercel/examples/tree/main/solutions/blog blog
+npm install
+npm run dev
 ```
 
-Then, run Next.js in development mode:
+The website runs at `http://localhost:3000` and the local MCP endpoint is:
+
+```text
+http://localhost:3000/api/mcp
+```
+
+## MCP Development
+
+Run all tests:
 
 ```bash
-pnpm dev
+npm test
 ```
 
-Deploy it to the cloud with [Vercel](https://vercel.com/templates) ([Documentation](https://nextjs.org/docs/app/building-your-application/deploying)).
+Run only MCP tests:
+
+```bash
+npm run test:mcp
+```
+
+Open MCP Inspector while the dev server is running:
+
+```bash
+npm run inspect:mcp
+```
+
+The production endpoint is `https://tomfejer.com/api/mcp`.
+
+Profile data lives in `app/lib/profile-data.ts`. Update `profileDataVersion` whenever public MCP data changes materially.
+
+## Release Check
+
+```bash
+npm test
+npm run build
+npm audit --omit=dev
+```
+
+Deployments are handled by the existing GitHub/Vercel integration.
