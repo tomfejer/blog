@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.tomfejer/hire-tom",
-  "title": "Hire Tom Fejer",
-  "description": "Public, read-only profile and capability tools for evaluating where Tom Fejer may be a strong product-design fit.",
+  "title": "Hire Tom Fejér",
+  "description": "Read-only tools for evaluating Tom Fejér's product-design capabilities and hiring fit.",
   "version": "1.0.0",
   "repository": {
     "url": "https://github.com/tomfejer/blog",
