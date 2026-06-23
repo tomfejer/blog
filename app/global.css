@@ -137,3 +137,24 @@ table {
 .title {
   text-wrap: balance;
 }
+
+.writing-title {
+  position: relative;
+}
+
+.writing-title::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: '';
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.writing-title:is(:hover, :focus-visible)::after {
+  transform: scaleX(1);
+}

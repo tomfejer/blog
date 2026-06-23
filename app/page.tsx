@@ -77,25 +77,18 @@ export default function Page() {
   return (
     <PageShell>
       <Section className="!pb-0 !pt-[82px]">
-        <header className="flex items-start gap-4">
-          <div className="grid h-[93px] w-[92px] shrink-0 place-items-center rounded-full bg-[#111111] text-sm font-normal text-white">
-            TF
+        <header className="relative flex min-h-11 w-full items-start">
+          <div className="w-60 min-w-0 text-sm font-normal">
+            <h1 className="leading-[1.4] text-black/90">Tom Fejér</h1>
+            <p className="leading-[1.8] text-black/50">Product Designer, NL</p>
           </div>
-          <div className="min-w-0 pt-1">
-            <h1 className="text-xl font-normal leading-[26px] text-black/90">Tom Fejér</h1>
-            <p className="text-sm leading-[1.5] text-black/50">
-              Product designer in the Netherlands
-            </p>
-            <div className="mt-1 flex flex-wrap">
-              <Link
-                href="/for-ai-agents"
-                className={`${GeistMono.className} inline-flex h-6 items-center gap-1 rounded-xl bg-[#f6f6f6] px-2.5 text-xs leading-none text-black/50 transition hover:bg-[#eeeeee] hover:text-black/90`}
-              >
-                <Image src="/terminal-icon.svg" alt="" width={16} height={16} aria-hidden="true" />
-                For AI Agents
-              </Link>
-            </div>
-          </div>
+          <Link
+            href="/for-ai-agents"
+            className={`${GeistMono.className} absolute right-0 top-0 inline-flex h-6 items-center justify-center gap-1 rounded-xl bg-[#f6f6f6] py-0.5 pl-2 pr-2.5 text-[10px] leading-none text-black/50 transition hover:bg-[#eeeeee] hover:text-black/90`}
+          >
+            <Image src="/terminal-icon.svg" alt="" width={16} height={16} aria-hidden="true" />
+            For AI Agents
+          </Link>
         </header>
       </Section>
 
@@ -143,15 +136,16 @@ export default function Page() {
           <div className="grid gap-6">
             {writing.map((item) => (
               <TimelineRow key={`${item.year}-${item.title}`} years={item.year}>
-                <Link href={item.href} target="_blank" rel="noreferrer" className="group">
-                  <h3 className="font-normal leading-[1.5] text-black/90 group-hover:underline">
-                    {item.title} ↗
-                  </h3>
-                  <p className="leading-[1.5] text-black/30">{item.source}</p>
-                  <p className="mt-1 leading-[1.5] text-black/50">
-                    {item.detail}
-                  </p>
+                <Link
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="writing-title inline-block"
+                >
+                  <h3 className="font-normal leading-[1.5] text-black/90">{item.title} ↗</h3>
                 </Link>
+                <p className="leading-[1.5] text-black/30">{item.source}</p>
+                <p className="mt-1 leading-[1.5] text-black/50">{item.detail}</p>
               </TimelineRow>
             ))}
           </div>
