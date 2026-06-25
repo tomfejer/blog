@@ -158,3 +158,35 @@ table {
 .writing-title:is(:hover, :focus-visible)::after {
   transform: scaleX(1);
 }
+
+.collapsible-section-panel {
+  opacity: 0;
+  transition:
+    grid-template-rows 420ms cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 260ms ease;
+}
+
+.collapsible-section-panel[data-state='open'] {
+  opacity: 1;
+}
+
+.collapsible-section-reveal {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 320ms ease,
+    transform 420ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.collapsible-section-panel[data-state='open'] .collapsible-section-reveal {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible-section-panel,
+  .collapsible-section-reveal {
+    transition: none;
+  }
+}

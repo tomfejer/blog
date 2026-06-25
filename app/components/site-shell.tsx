@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-white text-black/90">
+    <main className="flex min-h-screen flex-col bg-white text-black/90">
       {children}
     </main>
   )
