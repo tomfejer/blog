@@ -99,7 +99,7 @@ const aiLinks = [
 
 export default function Page() {
   return (
-    <PageShell>
+    <PageShell className="justify-between">
       <Section className="!pb-0 !pt-[82px]">
         <header className="relative flex min-h-11 w-full items-start">
           <div className="w-60 min-w-0 text-sm font-normal">
@@ -176,7 +176,7 @@ export default function Page() {
         </CollapsibleProfileSection>
       </Section>
 
-      <Section className="mt-[58px] !pb-8 !pt-0 sm:mt-auto sm:!pt-[58px]">
+      <Section className="mt-[58px] !pb-8 !pt-0">
         <footer className="grid grid-cols-[auto_auto] items-end gap-x-4 gap-y-3 text-sm">
           <div className="leading-[1.5] text-black/50">
             <Link

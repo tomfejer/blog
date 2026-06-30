@@ -1,8 +1,14 @@
 import Link from 'next/link'
 
-export function PageShell({ children }: { children: React.ReactNode }) {
+export function PageShell({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <main className="flex min-h-screen flex-col bg-white text-black/90">
+    <main className={`flex min-h-dvh flex-col bg-white text-black/90 ${className}`}>
       {children}
     </main>
   )
