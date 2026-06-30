@@ -176,15 +176,18 @@ export default function Page() {
         </CollapsibleProfileSection>
       </Section>
 
-      <Section className="mt-auto !pb-8 !pt-[58px]">
-        <footer className="grid gap-5 text-sm sm:grid-cols-[130px_470px]">
+      <Section className="mt-[58px] !pb-8 !pt-0 sm:mt-auto sm:!pt-[58px]">
+        <footer className="grid grid-cols-[auto_auto] items-end gap-x-4 gap-y-3 text-sm">
           <div className="leading-[1.5] text-black/50">
-            <Link href="https://nl.linkedin.com/in/tomfejer" className="hover:text-black/90">
+            <Link
+              href="https://nl.linkedin.com/in/tomfejer"
+              className="whitespace-nowrap hover:text-black/90"
+            >
               LinkedIn ↗
             </Link>
           </div>
-          <div className="flex items-end justify-end gap-3">
-            <p className="leading-[1.5] text-black/50">Ask AI about Tom</p>
+          <div className="flex min-w-0 items-end justify-end gap-2 justify-self-end">
+            <p className="whitespace-nowrap leading-[1.5] text-black/50">Ask AI about Tom</p>
             {aiLinks.map((item) => (
               <Link
                 key={item.label}

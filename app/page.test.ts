@@ -35,13 +35,15 @@ describe('portfolio page', () => {
     expect(html).toContain('data-state="closed"')
   })
 
-  it('renders contact links as a bottom footer without the old closing note', async () => {
+  it('keeps the footer compact on mobile while preserving desktop bottom anchoring', async () => {
     const Page = (await import('./page')).default
     const html = renderToStaticMarkup(createElement(Page))
 
     expect(html).not.toContain('I’m a builder who designs by making things work')
     expect(html).not.toContain('>Contact</h2>')
-    expect(html).toContain('mt-auto')
+    expect(html).toContain('mt-[58px] !pb-8 !pt-0 sm:mt-auto sm:!pt-[58px]')
+    expect(html).toContain('grid-cols-[auto_auto]')
+    expect(html).toContain('justify-self-end')
     expect(html).toContain('LinkedIn ↗')
     expect(html).toContain('Ask AI about Tom')
   })
